@@ -27,25 +27,24 @@ trap [Exception] {
 	  $logLine = "Getting Driver Info For Package " + $PackageID
 	  write-log $logLine
 	  ##Writing Driver Info For Package
-	  foreach($i in $PTC) {
-		if($i.PackageID -eq $PackageID) {
-			$CUID = $i.ContentUniqueID.toUpper()
-			foreach($j in $CITC) {
-				if($j.CI_UniqueID.toUpper() -eq $CUID) {
-					$CIID = $j.CI_ID.toUpper()
-					foreach($k in $drivers) {
-						if($k.CI_ID.toUpper() -eq $CIID) {
-							$Name = $k.LocalizedDisplayName
-							$Source = $k.ContentSourcePath
-							$Ver = $k.DriverVersion
-							$lineToWrite = $Name + ',' + $Source + ',' + $Ver
-							$lineToWrite | Out-File $filename -Append -Confirm:$false
-						}
-					}
-				}
-			}
-		}
-	}
+#	  foreach($i in $PTC) {
+#		if($i.PackageID -eq $PackageID) {
+#			$CUID = $i.ContentUniqueID.toUpper()
+#			foreach($j in $CITC) {
+#				if($j.CI_UniqueID.toUpper() -eq $CUID) {
+#					$CIID = $j.CI_ID.toUpper()
+#					foreach($k in $drivers) {
+#						if($k.CI_ID.toUpper() -eq $CIID) {
+#							$Name = $k.LocalizedDisplayName
+#							$Source = $k.ContentSourcePath
+#							$Ver = $k.DriverVersion
+#							$lineToWrite = $Name + ',' + $Source + ',' + $Ver
+##						}
+#				}
+#				}
+#			}
+#		}
+#	}
 	
 	  $logLine = "Wrote Information For Package " + $PackageID
 	  write-log $logLine
@@ -93,6 +92,34 @@ write-log "Getting PackageToContent"
 $PTC = Get-WmiObject SMS_PackageToContent -namespace root\sms\site_chm
 write-log "Getting CIToContent"
 $CITC = Get-WmiObject SMS_CIToContent -namespace root\sms\site_chm
+##Create Table Of Drivers With Information
+$driverTable
+foreach($driver in $drivers) {
+	$CIID = $driver.CI_ID
+	$logLine = "Checking Driver " + $driver.LocalizedDisplayName
+	write-log $logLine
+	foreach ($CI in $CITC) {
+		if($CI.CI_ID -eq $CIID) {
+			$CUID = $CI.CI_UniqueID.ToUpper()
+			$logLine = "Checking CI_UniqueID " + $CUID
+			write-log $logLine
+			foreach ($P in $PTC) {
+				if($CUID.Contains($P.ContentUniqueID.ToUpper())) {
+					write-log ($driverTable.count)
+					$properties=@{'Name'=$driver.LocalizedDisplayName;
+					'Source'=$driver.ContentSourcePath;
+					'Version'=$driver.DriverVersion;
+					'Package'=$P.PackageID}
+					$driverObject = New-Object -TypeName PSObject -Prop $properties
+					$logLine = "Found PackageID " + $driverObject.Package
+					write-log $logLine
+					write-log $driverObject
+					$driverTable = $driverTable + $driverObject
+				}
+			}
+		}
+	}
+}
 
 ##Output Data For Each Driver Package
 foreach ($i in $driverPacks) 
