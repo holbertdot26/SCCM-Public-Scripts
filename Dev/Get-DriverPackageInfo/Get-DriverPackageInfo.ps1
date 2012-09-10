@@ -104,6 +104,7 @@ foreach($driver in $drivers) {
 			$logLine = "Checking CI_UniqueID " + $CUID
 			write-log $logLine
 			foreach ($P in $PTC) {
+			write-log ($P.ContentUniqueID.ToUpper())
 				if($CUID.Contains($P.ContentUniqueID.ToUpper())) {
 					write-log ($driverTable.count)
 					$properties=@{'Name'=$driver.LocalizedDisplayName;
