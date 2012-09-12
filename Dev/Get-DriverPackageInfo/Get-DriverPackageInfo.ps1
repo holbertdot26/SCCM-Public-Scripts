@@ -17,37 +17,51 @@ trap [Exception] {
       write-log $("TRAPPED: " + $_.Exception.Message); 
       continue; 
 	  }
+	  
 	  ##Writing Driver Package Header
 	  $PackageID = $ThisDriverPackage.PackageID
 	  $PackageName = $ThisDriverPackage.Name
 	  $PkgSourcePath = $ThisDriverPackage.PkgSourcePath
 	  $lineToWrite = $PackageID + ',' + $PackageName + ',' + $PkgSourcePath
 	  $fileName = "C:\logs\Get-DriverPackageInfo\" + $PackageID + ".txt"
+	  $oldFile = Get-Content $fileName
 	  $lineToWrite | Out-File $fileName -Confirm:$false
 	  $logLine = "Getting Driver Info For Package " + $PackageID
 	  write-log $logLine
 	  ##Writing Driver Info For Package
-#	  foreach($i in $PTC) {
-#		if($i.PackageID -eq $PackageID) {
-#			$CUID = $i.ContentUniqueID.toUpper()
-#			foreach($j in $CITC) {
-#				if($j.CI_UniqueID.toUpper() -eq $CUID) {
-#					$CIID = $j.CI_ID.toUpper()
-#					foreach($k in $drivers) {
-#						if($k.CI_ID.toUpper() -eq $CIID) {
-#							$Name = $k.LocalizedDisplayName
-#							$Source = $k.ContentSourcePath
-#							$Ver = $k.DriverVersion
-#							$lineToWrite = $Name + ',' + $Source + ',' + $Ver
-##						}
-#				}
-#				}
-#			}
-#		}
-#	}
-	
+		if($PackageIDToContentID.ContainsKey($PackageID)) {
+			$CIDs = $PackageIDToContentID.Get_Item($PackageID)
+			foreach($CID in $CIDs) {
+				if($ContentIDToCIID.ContainsKey($CID)) {
+					$CIIDs = $ContentIDToCIID.Get_Item($CID)
+					foreach($CIID in $CIIDs) {
+						foreach($i in $drivers) {
+							if($i.CI_ID -eq $CIID) {
+								$Name = $i.LocalizedDisplayName
+								$Source = $i.ContentSourcePath
+								$Ver = $i.DriverVersion
+								$lineToWrite = $Name + ',' + $Source + ',' + $Ver
+								$lineToWrite | Out-File $filename -append -confirm:$false
+							}
+						}
+					}
+				}
+			}
+		}
+		
 	  $logLine = "Wrote Information For Package " + $PackageID
 	  write-log $logLine
+	  
+	  #CompareFiles
+	  $newFile = Get-Content $fileName
+	  $diff = diff $oldFile $newFile
+	  if($diff.count -gt 0) {
+	  	$logLine = "Changes have been made to " + $PackageID + ".txt"
+		$ChangeMSG = $ChangeMSG + $PackageID + "(" + $PackageName + "), "
+	} else {
+		$logLine = "No changes have been made to " + $PackageID + ".txt"
+	}
+		write-log $logLine
   
 }	  
 
@@ -92,35 +106,26 @@ write-log "Getting PackageToContent"
 $PTC = Get-WmiObject SMS_PackageToContent -namespace root\sms\site_chm
 write-log "Getting CIToContent"
 $CITC = Get-WmiObject SMS_CIToContent -namespace root\sms\site_chm
-##Create Table Of Drivers With Information
-$driverTable
-foreach($driver in $drivers) {
-	$CIID = $driver.CI_ID
-	$logLine = "Checking Driver " + $driver.LocalizedDisplayName
-	write-log $logLine
-	foreach ($CI in $CITC) {
-		if($CI.CI_ID -eq $CIID) {
-			$CUID = $CI.CI_UniqueID.ToUpper()
-			$logLine = "Checking CI_UniqueID " + $CUID
-			write-log $logLine
-			foreach ($P in $PTC) {
-			write-log ($P.ContentUniqueID.ToUpper())
-				if($CUID.Contains($P.ContentUniqueID.ToUpper())) {
-					write-log ($driverTable.count)
-					$properties=@{'Name'=$driver.LocalizedDisplayName;
-					'Source'=$driver.ContentSourcePath;
-					'Version'=$driver.DriverVersion;
-					'Package'=$P.PackageID}
-					$driverObject = New-Object -TypeName PSObject -Prop $properties
-					$logLine = "Found PackageID " + $driverObject.Package
-					write-log $logLine
-					write-log $driverObject
-					$driverTable = $driverTable + $driverObject
-				}
-			}
-		}
+##Create Maps of Data
+$PackageIDToContentID = @{($PTC[0].PackageID) = @($PTC[0].ContentID)}
+foreach ($P in $PTC) {
+	if($PackageIDToContentID.ContainsKey($P.PackageID)) {
+		$PackageIDToContentID.Set_Item($P.PackageID,$PackageIDToContentID.Get_Item($P.PackageID)+$P.ContentID)
+	} else {
+		$PackageIDToContentID.Add($P.PackageID,@($P.ContentID))
 	}
 }
+$ContentIDToCIID = @{($CITC[0].ContentID) = ($CITC[0].CI_ID)}
+foreach($C in $CITC) {
+	if($ContentIDToCIID.ContainsKey($C.ContentID)) {
+		$ContentIDToCIID.Set_Item($C.ContentID,$ContentIDToCIID.Get_Item($C.ContentID)+$C.CI_ID)
+	} else {
+		$ContentIDToCIID.Add(($C.ContentID),@($C.CI_ID))
+	}
+}
+
+#Create Change Message
+$ChangeMSG = "Changes have been made to the following packages: "
 
 ##Output Data For Each Driver Package
 foreach ($i in $driverPacks) 
@@ -129,4 +134,7 @@ foreach ($i in $driverPacks)
 	}	
 
 write-log "Complete"
+
+write-host $ChangeMSG
+write-log $ChangeMSG
 	
