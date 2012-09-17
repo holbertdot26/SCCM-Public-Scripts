@@ -141,7 +141,7 @@ if($changesMade) {
 	git config --global user.name 'ASC-SCCM-Robot'
 	git config --global user.email win-team@chem.osu.edu
 
-	$GitPasswd = get-content GitPassword.txt
+	$GitPasswd = get-content C:\Scripts\Get-DriverPackageInfo\GitPassword.txt
 	write-host $GitPasswd
 
 	$GitPath = "C:\GitHub\SCCM-Public-Scripts"
