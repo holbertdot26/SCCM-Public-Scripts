@@ -55,11 +55,14 @@ trap [Exception] {
 	  if($diff.count -gt 0) {
 		$changesMade = $true
 	  	$logLine = "Changes have been made to " + $PackageID + ".txt"
-		$ChangeMSG = $ChangeMSG + $PackageID + "(" + $PackageName + "), "
+		$ChangeMSG = $PackageID + "(" + $PackageName + "), "
 		write-log $logLine
 	}
-  
-}	  
+  $retval = @()
+  $retval += $changesMade
+  $retval += $ChangeMSG
+  Return $retval
+}
 
 
 
@@ -127,7 +130,11 @@ $ChangeMSG = "Changes have been made to the following packages: "
 ##Output Data For Each Driver Package
 foreach ($i in $driverPacks) 
     {
-		WriteDriverPackageToFile($i)
+		$results = WriteDriverPackageToFile($i)
+		if($results[0]) {
+			$changesMade = $true
+			$changeMSG = $changeMSG + $results[1]
+		}
 	}	
 
 write-host $ChangeMSG
@@ -147,7 +154,9 @@ if($changesMade) {
 	$GitPath = "C:\GitHub\SCCM-Public-Scripts"
 	cd $GitPath
 	git init
-	git committ -am $ChangeMSG
+	$GitDriverPath = $GitPath + "\DriverPackages\*"
+	git add $GitDriverPath
+	git commit -m $ChangeMSG
 	}
 
 write-log "Complete"
