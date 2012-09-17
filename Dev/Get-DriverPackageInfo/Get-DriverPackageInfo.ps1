@@ -22,8 +22,8 @@ trap [Exception] {
 	  $PackageID = $ThisDriverPackage.PackageID
 	  $PackageName = $ThisDriverPackage.Name
 	  $PkgSourcePath = $ThisDriverPackage.PkgSourcePath
-	  $lineToWrite = $PackageID + ',' + $PackageName + ',' + $PkgSourcePath
-	  $fileName = "C:\logs\Get-DriverPackageInfo\" + $PackageID + ".txt"
+	  $lineToWrite = "Driver Name" + ',' + "Driver Source Path" + ',' + "Driver Version" + ',' + "Driver PackageID" + ',' + "Driver Package Name" + ',' + "Driver Package Source Path"
+	  $fileName = "C:\GitHub\SCCM-Public-Scripts\DriverPackages\" + $PackageID + ".csv"
 	  $oldFile = Get-Content $fileName
 	  $lineToWrite | Out-File $fileName -Confirm:$false
 	  $logLine = "Getting Driver Info For Package " + $PackageID
@@ -40,7 +40,7 @@ trap [Exception] {
 								$Name = $i.LocalizedDisplayName
 								$Source = $i.ContentSourcePath
 								$Ver = $i.DriverVersion
-								$lineToWrite = $Name + ',' + $Source + ',' + $Ver
+								$lineToWrite = $Name + ',' + $Source + ',' + $Ver + ',' + $PackageID + ',' + $PackageName + ',' + $PkgSourcePath
 								$lineToWrite | Out-File $filename -append -confirm:$false
 							}
 						}
@@ -48,18 +48,13 @@ trap [Exception] {
 				}
 			}
 		}
-		
-	  $logLine = "Wrote Information For Package " + $PackageID
-	  write-log $logLine
-	  
+
 	  #CompareFiles
 	  $newFile = Get-Content $fileName
 	  $diff = diff $oldFile $newFile
 	  if($diff.count -gt 0) {
 	  	$logLine = "Changes have been made to " + $PackageID + ".txt"
 		$ChangeMSG = $ChangeMSG + $PackageID + "(" + $PackageName + "), "
-	} else {
-		$logLine = "No changes have been made to " + $PackageID + ".txt"
 	}
 		write-log $logLine
   
