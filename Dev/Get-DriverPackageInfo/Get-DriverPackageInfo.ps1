@@ -50,6 +50,7 @@ trap [Exception] {
 		}
 
 	  #CompareFiles
+	  $changesMade = $false
 	  $newFile = Get-Content $fileName
 	  $diff = diff $oldFile $newFile
 	  if($diff.count -gt 0) {
@@ -131,13 +132,12 @@ $ChangeMSG = "Changes have been made to the following packages: "
 foreach ($i in $driverPacks) 
     {
 		$results = WriteDriverPackageToFile($i)
-		if($results[0]) {
+		if($results[0] -eq $true) {
 			$changesMade = $true
 			$changeMSG = $changeMSG + $results[1]
 		}
 	}	
 
-write-host $ChangeMSG
 write-log $ChangeMSG
 
 #Commit to Git
@@ -148,8 +148,7 @@ if($changesMade) {
 	git config --global user.name 'ASC-SCCM-Robot'
 	git config --global user.email win-team@chem.osu.edu
 
-	$GitPasswd = get-content C:\Scripts\Get-DriverPackageInfo\GitPassword.txt
-	write-host $GitPasswd
+	#$GitPasswd = get-content C:\Scripts\Get-DriverPackageInfo\GitPassword.txt
 
 	$GitPath = "C:\GitHub\SCCM-Public-Scripts"
 	cd $GitPath
