@@ -53,10 +53,11 @@ trap [Exception] {
 	  $newFile = Get-Content $fileName
 	  $diff = diff $oldFile $newFile
 	  if($diff.count -gt 0) {
+		$changesMade = $true
 	  	$logLine = "Changes have been made to " + $PackageID + ".txt"
 		$ChangeMSG = $ChangeMSG + $PackageID + "(" + $PackageName + "), "
-	}
 		write-log $logLine
+	}
   
 }	  
 
@@ -101,6 +102,7 @@ write-log "Getting PackageToContent"
 $PTC = Get-WmiObject SMS_PackageToContent -namespace root\sms\site_chm
 write-log "Getting CIToContent"
 $CITC = Get-WmiObject SMS_CIToContent -namespace root\sms\site_chm
+$changesMade = $false #Variable to track if changes were made and if so a commit is needed
 ##Create Maps of Data
 $PackageIDToContentID = @{($PTC[0].PackageID) = @($PTC[0].ContentID)}
 foreach ($P in $PTC) {
@@ -128,8 +130,25 @@ foreach ($i in $driverPacks)
 		WriteDriverPackageToFile($i)
 	}	
 
-write-log "Complete"
-
 write-host $ChangeMSG
 write-log $ChangeMSG
+
+#Commit to Git
+if($changesMade) {
+	$logLine = "Committing Changes to Git"
+	write-log $logLine
+	
+	git config --global user.name 'ASC-SCCM-Robot'
+	git config --global user.email win-team@chem.osu.edu
+
+	$GitPasswd = get-content GitPassword.txt
+	write-host $GitPasswd
+
+	$GitPath = "C:\GitHub\SCCM-Public-Scripts"
+	cd $GitPath
+	git init
+	git committ -am $ChangeMSG
+	}
+
+write-log "Complete"
 	
