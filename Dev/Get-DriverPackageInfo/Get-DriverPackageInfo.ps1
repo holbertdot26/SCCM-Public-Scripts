@@ -24,10 +24,20 @@ trap [Exception] {
 	  $PkgSourcePath = $ThisDriverPackage.PkgSourcePath
 	  $lineToWrite = "Driver Name" + ',' + "Driver Source Path" + ',' + "Driver Version" + ',' + "Driver PackageID" + ',' + "Driver Package Name" + ',' + "Driver Package Source Path"
 	  $fileName = "C:\GitHub\SCCM-Public-Scripts2\DriverPackages\" + $PackageID + ".txt"
-	  $oldFile = Get-Content $fileName
-	  $lineToWrite | Out-File $fileName -Confirm:$false
 	  $logLine = "Getting Driver Info For Package " + $PackageID
 	  write-log $logLine
+	  
+	  #Check if driver package is new
+	  $changesMade = $false
+	  if((Test-Path $filename) -eq $false) {
+		$changesMade = $true
+		$logLine = "Package: " + $PackageID + " is a new package."
+		$ChangeMSG = "NEW PACKAGE: " + $PackageID + "(" + $PackageName + "), "
+		write-log $logLine
+	}
+		
+	  $oldFile = Get-Content $fileName
+	  $lineToWrite | Out-File $fileName -Confirm:$false
 	  ##Writing Driver Info For Package
 		if($PackageIDToContentID.ContainsKey($PackageID)) {
 			$CIDs = $PackageIDToContentID.Get_Item($PackageID)
@@ -49,15 +59,16 @@ trap [Exception] {
 			}
 		}
 
-	  #CompareFiles
-	  $changesMade = $false
-	  $newFile = Get-Content $fileName
-	  $diff = diff $oldFile $newFile
-	  if($diff.count -gt 0) {
-		$changesMade = $true
-	  	$logLine = "Changes have been made to " + $PackageID + ".txt"
-		$ChangeMSG = $PackageID + "(" + $PackageName + "), "
-		write-log $logLine
+		if(!$changesMade) {
+		  #CompareFiles
+		  $newFile = Get-Content $fileName
+		  $diff = diff $oldFile $newFile
+		  if($diff.count -gt 0) {
+			$changesMade = $true
+			$logLine = "Changes have been made to " + $PackageID + ".txt"
+			$ChangeMSG = $PackageID + "(" + $PackageName + "), "
+			write-log $logLine
+		}
 	}
   $retval = @()
   $retval += $changesMade
@@ -128,6 +139,8 @@ foreach($C in $CITC) {
 #Create Change Message
 $ChangeMSG = "Changes have been made to the following packages: "
 
+$driverPackageIDs = @()
+
 ##Output Data For Each Driver Package
 foreach ($i in $driverPacks) 
     {
@@ -136,9 +149,24 @@ foreach ($i in $driverPacks)
 			$changesMade = $true
 			$changeMSG = $changeMSG + $results[1]
 		}
+		$driverPackageIDs += $i.PackageID
 	}	
 
+#Check For Deleted Packages as Files
+$driverPackagePath = "C:\GitHub\SCCM-Public-Scripts2\DriverPackages\"
+$driverPackageFiles = ls $driverPackagePath
+foreach ($file in $driverPackageFiles) {
+	if(!($driverPackageIDs -contains $file.BaseName)) {
+		$ChangeMSG += "REMOVED PACKAGE: " + $file.BaseName ", "
+		$logLine = "Driver Package: " + $file.BaseName + " no longer exists, deleting file."
+		write-log $logLine
+		$file.Delete()
+	}
+}
+	
 write-log $ChangeMSG
+
+
 
 #Commit to Git
 if($changesMade) {
