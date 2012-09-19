@@ -155,12 +155,15 @@ foreach ($i in $driverPacks)
 #Check For Deleted Packages as Files
 $driverPackagePath = "C:\GitHub\SCCM-Public-Scripts2\DriverPackages\"
 $driverPackageFiles = ls $driverPackagePath
+$filesToRMFromGit = @()
 foreach ($file in $driverPackageFiles) {
 	if(!($driverPackageIDs -contains $file.BaseName)) {
-		$ChangeMSG += "(REMOVED PACKAGE) " + $file.BaseName + ','
+		$PkgCont = Import-Csv $file.PSPath
+		$PackageName = ($PkgCont[0]."Driver Package Name")
+		$ChangeMSG += "(REMOVED PACKAGE) " + $file.BaseName + " - " + $PackageName + ','
 		$logLine = "Driver Package: " + $file.BaseName + " no longer exists, deleting file."
 		write-log $logLine
-		$file.Delete()
+		$filesToRMFromGit += $file.PSPath
 		$changesMade = $true
 	}
 }
@@ -181,6 +184,9 @@ if($changesMade) {
 	git init
 	$GitDriverPath = $GitPath + "\DriverPackages\*"
 	git add $GitDriverPath
+	foreach ($fileName in $filesToRMFromGit) {
+		git rm $fileName
+	}
 	git commit -m $ChangeMSG
 	#git remote add origin https://github.com/ASCTech/ASC-SCCM-Private.git
 	git push -u SCCMRobot master
