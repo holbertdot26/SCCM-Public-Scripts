@@ -32,7 +32,7 @@ trap [Exception] {
 	  if((Test-Path $filename) -eq $false) {
 		$changesMade = $true
 		$logLine = "Package: " + $PackageID + " is a new package."
-		$ChangeMSG = "NEW PACKAGE: " + $PackageID + "(" + $PackageName + "), "
+		$ChangeMSG = "(NEW PACKAGE) " + $PackageID + " - " + $PackageName + ", "
 		write-log $logLine
 	}
 		
@@ -66,7 +66,7 @@ trap [Exception] {
 		  if($diff.count -gt 0) {
 			$changesMade = $true
 			$logLine = "Changes have been made to " + $PackageID + ".txt"
-			$ChangeMSG = $PackageID + "(" + $PackageName + "), "
+			$ChangeMSG = "(changed) " + $PackageID + " - " + $PackageName + ", "
 			write-log $logLine
 		}
 	}
@@ -137,9 +137,9 @@ foreach($C in $CITC) {
 }
 
 #Create Change Message
-$ChangeMSG = "Changes have been made to the following packages: "
+$ChangeMSG = "The Following Changes Have Been Made: "
 
-$driverPackageIDs = @()
+$driverPackageIDs = @{}
 
 ##Output Data For Each Driver Package
 foreach ($i in $driverPacks) 
@@ -149,27 +149,24 @@ foreach ($i in $driverPacks)
 			$changesMade = $true
 			$changeMSG = $changeMSG + $results[1]
 		}
-		$driverPackageIDs += $i.PackageID
+		$driverPackageIDs.Add($i.PackageID,$i.PackageName)
 	}	
 
 #Check For Deleted Packages as Files
 $driverPackagePath = "C:\GitHub\SCCM-Public-Scripts2\DriverPackages\"
 $driverPackageFiles = ls $driverPackagePath
 foreach ($file in $driverPackageFiles) {
-	if(!($driverPackageIDs -contains $file.BaseName)) {
-		$ChangeMSG += "REMOVED PACKAGE: " + $file.BaseName + ", "
+	if(!($driverPackageIDs.ContainsKey($file.BaseName))) {
+		$ChangeMSG += "(REMOVED PACKAGE) " + $file.BaseName + " - " + $driverPackageIDs.Get_Item($file.BaseName) + ','
 		$logLine = "Driver Package: " + $file.BaseName + " no longer exists, deleting file."
 		write-log $logLine
 		$file.Delete()
 	}
 }
 	
-write-log $ChangeMSG
-
-
-
 #Commit to Git
 if($changesMade) {
+	write-log $ChangeMSG
 	$logLine = "Committing Changes to Git"
 	write-log $logLine
 	
@@ -184,6 +181,10 @@ if($changesMade) {
 	$GitDriverPath = $GitPath + "\DriverPackages\*"
 	git add $GitDriverPath
 	git commit -m $ChangeMSG
+	#git remote add origin https://github.com/ASCTech/ASC-SCCM-Private.git
+	git push -u SCCMRobot master
+	} else {
+		write-log "No Changes Have Been Made"
 	}
 
 write-log "Complete"
