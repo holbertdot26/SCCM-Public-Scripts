@@ -139,7 +139,7 @@ foreach($C in $CITC) {
 #Create Change Message
 $ChangeMSG = "The Following Changes Have Been Made: "
 
-$driverPackageIDs = @{}
+$driverPackageIDs = @()
 
 ##Output Data For Each Driver Package
 foreach ($i in $driverPacks) 
@@ -149,18 +149,19 @@ foreach ($i in $driverPacks)
 			$changesMade = $true
 			$changeMSG = $changeMSG + $results[1]
 		}
-		$driverPackageIDs.Add($i.PackageID,$i.PackageName)
+		$driverPackageIDs += $i.PackageID
 	}	
 
 #Check For Deleted Packages as Files
 $driverPackagePath = "C:\GitHub\SCCM-Public-Scripts2\DriverPackages\"
 $driverPackageFiles = ls $driverPackagePath
 foreach ($file in $driverPackageFiles) {
-	if(!($driverPackageIDs.ContainsKey($file.BaseName))) {
-		$ChangeMSG += "(REMOVED PACKAGE) " + $file.BaseName + " - " + $driverPackageIDs.Get_Item($file.BaseName) + ','
+	if(!($driverPackageIDs -contains $file.BaseName)) {
+		$ChangeMSG += "(REMOVED PACKAGE) " + $file.BaseName + ','
 		$logLine = "Driver Package: " + $file.BaseName + " no longer exists, deleting file."
 		write-log $logLine
 		$file.Delete()
+		$changesMade = $true
 	}
 }
 	
