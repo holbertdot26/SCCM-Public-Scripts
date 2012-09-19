@@ -27,7 +27,7 @@ If((Path-Test $RepoRootPath) -eq $false)
 
 
 ##LOG FILE FUNCTION
-function write-log([string]$info){            #Code REF - http://powershellcommunity.org/Forums/tabid/54/aft/4700/Default.aspx 
+function write-log([string]$info){            #Code REF - http://powershellcommunity.org/Forums/tabid/54/aft/4700/Default.aspx  
     if($loginitialized -eq $false){            
         $FileHeader | Out-File $logfile -Append -Confirm:$false            
         $script:loginitialized = $True            
