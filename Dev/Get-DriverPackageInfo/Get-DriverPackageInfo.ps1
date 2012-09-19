@@ -23,7 +23,7 @@ trap [Exception] {
 	  $PackageName = $ThisDriverPackage.Name
 	  $PkgSourcePath = $ThisDriverPackage.PkgSourcePath
 	  $lineToWrite = "Driver Name" + ',' + "Driver Source Path" + ',' + "Driver Version" + ',' + "Driver PackageID" + ',' + "Driver Package Name" + ',' + "Driver Package Source Path"
-	  $fileName = "C:\GitHub\SCCM-Public-Scripts\DriverPackages\" + $PackageID + ".csv"
+	  $fileName = "C:\GitHub\SCCM-Public-Scripts2\DriverPackages\" + $PackageID + ".txt"
 	  $oldFile = Get-Content $fileName
 	  $lineToWrite | Out-File $fileName -Confirm:$false
 	  $logLine = "Getting Driver Info For Package " + $PackageID
@@ -150,7 +150,7 @@ if($changesMade) {
 
 	#$GitPasswd = get-content C:\Scripts\Get-DriverPackageInfo\GitPassword.txt
 
-	$GitPath = "C:\GitHub\SCCM-Public-Scripts"
+	$GitPath = "C:\GitHub\SCCM-Public-Scripts2"
 	cd $GitPath
 	git init
 	$GitDriverPath = $GitPath + "\DriverPackages\*"
