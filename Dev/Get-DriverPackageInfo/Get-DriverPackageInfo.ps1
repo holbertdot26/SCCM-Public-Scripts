@@ -158,12 +158,12 @@ $driverPackageFiles = ls $driverPackagePath
 $filesToRMFromGit = @()
 foreach ($file in $driverPackageFiles) {
 	if(!($driverPackageIDs -contains $file.BaseName)) {
-		$PkgCont = Import-Csv $file.PSPath
+		$PkgCont = Import-Csv $file.FullName
 		$PackageName = ($PkgCont[0]."Driver Package Name")
 		$ChangeMSG += "(REMOVED PACKAGE) " + $file.BaseName + " - " + $PackageName + ','
 		$logLine = "Driver Package: " + $file.BaseName + " no longer exists, deleting file."
 		write-log $logLine
-		$filesToRMFromGit += $file.PSPath
+		$filesToRMFromGit += $file.FullName
 		$changesMade = $true
 	}
 }
