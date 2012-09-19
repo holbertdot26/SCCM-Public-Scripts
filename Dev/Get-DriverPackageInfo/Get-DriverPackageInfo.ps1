@@ -1,5 +1,33 @@
+######################################################################################
+#Script Name: Get-DriverPackageInfo.ps1
+#Authored By: Robert Holbert - Holbert.26@Chemistry.Ohio-State.edu
+#Created On: 9/19/2012
+#Function: Checks For Changes in Driver Packages and Pushes any Changes to GitHub Repo
+######################################################################################
+
+
+##Variables
+$GitPath = "C:\GitHub\SCCM-Public-Scripts2"
+$gitUsername = 'ASC-SCCM-Robot'
+$gitEmail = win-team@chem.osu.edu
+$driverPackagePath = $GitPath + "\DriverPackages\"
+$logFileRoot = "C:\logs\Get-DriverPackageInfo\"
+$GitUsername = "ASC-SCCM-Robot"
+$PasswordPath = "C:\Scripts\Get-DriverPackageInfo\GitPassword.txt"
+$GitPasswd = get-content $PasswordPath
+$WebRepositoryPath = "github.com/ASCTech/ASC-SCCM-Private.git"
+$AuthWebRepositoryPath = "https://" + $GitUsername + ':' + $GitPasswd + '@' + $WebRepositoryPath
+
+If((Path-Test $RepoRootPath) -eq $false)
+	{
+		$msg = "Repo root path DNE (" + $repoRootPath + ")."
+		Write-host -f magenta
+		Exit
+	}
+
+
 ##LOG FILE FUNCTION
-function write-log([string]$info){            
+function write-log([string]$info){            #Code REF - http://powershellcommunity.org/Forums/tabid/54/aft/4700/Default.aspx 
     if($loginitialized -eq $false){            
         $FileHeader | Out-File $logfile -Append -Confirm:$false            
         $script:loginitialized = $True            
@@ -23,7 +51,7 @@ trap [Exception] {
 	  $PackageName = $ThisDriverPackage.Name
 	  $PkgSourcePath = $ThisDriverPackage.PkgSourcePath
 	  $lineToWrite = "Driver Name" + ',' + "Driver Source Path" + ',' + "Driver Version" + ',' + "Driver PackageID" + ',' + "Driver Package Name" + ',' + "Driver Package Source Path"
-	  $fileName = "C:\GitHub\SCCM-Public-Scripts2\DriverPackages\" + $PackageID + ".txt"
+	  $fileName = $driverPackagePath + $PackageID + ".txt"
 	  $logLine = "Getting Driver Info For Package " + $PackageID
 	  write-log $logLine
 	  
@@ -79,8 +107,9 @@ trap [Exception] {
 
 
 ##########################################################################################
-<#---------Logfile Info----------#>            
-$script:logfile = "C:\logs\Get-DriverPackageInfo\Get-DriverPackageInfo-$(get-date -format MMddyyHHmmss).log"            
+<#---------Logfile Info----------#>            #Code REF - http://powershellcommunity.org/Forums/tabid/54/aft/4700/Default.aspx
+$logfileFullName = $logFileRoot.TrimEnd("\\") + "\Get-DriverPackageInfo-" + $(get-date -format MMddyyHHmmss) + ".log"
+$script:logfile = $logfileFullName
 $script:Seperator = @"
 
 $("-" * 25)
@@ -153,7 +182,7 @@ foreach ($i in $driverPacks)
 	}	
 
 #Check For Deleted Packages as Files
-$driverPackagePath = "C:\GitHub\SCCM-Public-Scripts2\DriverPackages\"
+##$driverPackagePath - Set Only At the Top
 $driverPackageFiles = ls $driverPackagePath
 $filesToRMFromGit = @()
 foreach ($file in $driverPackageFiles) {
@@ -174,22 +203,21 @@ if($changesMade) {
 	$logLine = "Committing Changes to Git"
 	write-log $logLine
 	
-	git config --global user.name 'ASC-SCCM-Robot'
-	git config --global user.email win-team@chem.osu.edu
+	#username and email set at top
+	git config --global user.name $gitUsername
+	git config --global user.email $gitEmail
 
-	#$GitPasswd = get-content C:\Scripts\Get-DriverPackageInfo\GitPassword.txt
-
-	$GitPath = "C:\GitHub\SCCM-Public-Scripts2"
+	##$GitPath - Set Only At The Top
 	cd $GitPath
 	git init
-	$GitDriverPath = $GitPath + "\DriverPackages\*"
-	git add $GitDriverPath
+	##$driverPackagePath - Set only at the top
+	git add $driverPackagePath
 	foreach ($fileName in $filesToRMFromGit) {
 		git rm $fileName
 	}
 	git commit -m $ChangeMSG
 	#git remote add origin https://github.com/ASCTech/ASC-SCCM-Private.git
-	git push -u SCCMRobot master
+	git push -u $AuthWebRepositoryPath master
 	} else {
 		write-log "No Changes Have Been Made"
 	}
