@@ -157,7 +157,7 @@ $driverPackagePath = "C:\GitHub\SCCM-Public-Scripts2\DriverPackages\"
 $driverPackageFiles = ls $driverPackagePath
 foreach ($file in $driverPackageFiles) {
 	if(!($driverPackageIDs -contains $file.BaseName)) {
-		$ChangeMSG += "REMOVED PACKAGE: " + $file.BaseName ", "
+		$ChangeMSG += "REMOVED PACKAGE: " + $file.BaseName + ", "
 		$logLine = "Driver Package: " + $file.BaseName + " no longer exists, deleting file."
 		write-log $logLine
 		$file.Delete()
