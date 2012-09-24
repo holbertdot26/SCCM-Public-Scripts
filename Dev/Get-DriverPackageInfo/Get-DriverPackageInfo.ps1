@@ -8,19 +8,18 @@
 
 ##Variables
 $GitPath = "C:\GitHub\SCCM-Public-Scripts2"
-$gitUsername = 'ASC-SCCM-Robot'
-$gitEmail = win-team@chem.osu.edu
+$gitUsername = "ASC-SCCM-Robot"
+$gitEmail = "win-team@chem.osu.edu"
 $driverPackagePath = $GitPath + "\DriverPackages\"
 $logFileRoot = "C:\logs\Get-DriverPackageInfo\"
-$GitUsername = "ASC-SCCM-Robot"
 $PasswordPath = "C:\Scripts\Get-DriverPackageInfo\GitPassword.txt"
 $GitPasswd = get-content $PasswordPath
 $WebRepositoryPath = "github.com/ASCTech/ASC-SCCM-Private.git"
 $AuthWebRepositoryPath = "https://" + $GitUsername + ':' + $GitPasswd + '@' + $WebRepositoryPath
 
-If((Path-Test $RepoRootPath) -eq $false)
+If((Test-Path $GitPath) -eq $false)
 	{
-		$msg = "Repo root path DNE (" + $repoRootPath + ")."
+		$msg = "Repo root path DNE (" + $GitPath + ")."
 		Write-host -f magenta
 		Exit
 	}
@@ -29,10 +28,10 @@ If((Path-Test $RepoRootPath) -eq $false)
 ##LOG FILE FUNCTION Code REF - http://powershellcommunity.org/Forums/tabid/54/aft/4700/Default.aspx  
 function write-log([string]$info){
     if($loginitialized -eq $false){            
-        $FileHeader | Out-File $logfile -Append -Confirm:$false            
+        $FileHeader | Out-File $logfile -Append -Confirm:$false -encoding "UTF8"          
         $script:loginitialized = $True            
     }            
-    $info | Out-File $logfile -Append -Confirm:$false         
+    $info | Out-File $logfile -Append -Confirm:$false -encoding "UTF8"
 }            
    
 ##############################################################################
@@ -65,7 +64,7 @@ trap [Exception] {
 	}
 		
 	  $oldFile = Get-Content $fileName
-	  $lineToWrite | Out-File $fileName -Confirm:$false
+	  $lineToWrite | Out-File $fileName -Confirm:$false -encoding "UTF8"
 	  ##Writing Driver Info For Package
 		if($PackageIDToContentID.ContainsKey($PackageID)) {
 			$CIDs = $PackageIDToContentID.Get_Item($PackageID)
@@ -79,7 +78,7 @@ trap [Exception] {
 								$Source = $i.ContentSourcePath
 								$Ver = $i.DriverVersion
 								$lineToWrite = $Name + ',' + $Source + ',' + $Ver + ',' + $PackageID + ',' + $PackageName + ',' + $PkgSourcePath
-								$lineToWrite | Out-File $filename -append -confirm:$false
+								$lineToWrite | Out-File $filename -append -confirm:$false -encoding "UTF8"
 							}
 						}
 					}
@@ -103,8 +102,6 @@ trap [Exception] {
   $retval += $ChangeMSG
   Return $retval
 }
-
-
 
 ##########################################################################################
 <#---------Logfile Info----------#>            #Code REF - http://powershellcommunity.org/Forums/tabid/54/aft/4700/Default.aspx
@@ -131,6 +128,9 @@ Created by:  Holbert.26
 	
 ##Main	
 trap [Exception] { 
+		write-host -f magenta $("TRAPPED: " + $_.Exception.GetType().FullName); 
+    write-host -f magenta $("TRAPPED: " + $_.Exception.Message); 
+    
       write-log
       write-log $("TRAPPED: " + $_.Exception.GetType().FullName); 
       write-log $("TRAPPED: " + $_.Exception.Message); 
@@ -196,7 +196,13 @@ foreach ($file in $driverPackageFiles) {
 		$changesMade = $true
 	}
 }
-	
+
+#convert all .txt files in repo files to UTF-8
+$txtFiles = ls $gitPath | where {$_.Name -like "*.txt"} | % {
+	#$newname = $_.FullName + ".utf8"
+	(Get-Content -Path $_.FullName) | Set-Content -Encoding "UTF8" $_.FullName
+}
+
 #Commit to Git
 if($changesMade) {
 	write-log $ChangeMSG
