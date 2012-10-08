@@ -13,7 +13,7 @@
 '  "minint", which indicates the system was booted with CD or PXE.
 ' 1.1 (06/01/2009)- Added check if the computer name equals "minwinpc", 
 '  which indicates the system was booted with USB key
-' 1.2 (09/26/2012)- Added restriction that computer name can't be over 13 characters
+' 1.2 (09/26/2012)- Added restriction that computer name can't be over 13 valid characters
 '==========================================================================
 
 Dim sNewComputerName, oTaskSequence, sTSMachineName, bPromptName, sExpression, sArchitecture
